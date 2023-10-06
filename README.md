@@ -2,4 +2,4 @@
 A bot that sends weather forecast of all cities.
 Бот, отправляющий прогноз погоды всех городов.
 
-API: https://openweathermap.org/
+You can get the API at https://openweathermap.org/
