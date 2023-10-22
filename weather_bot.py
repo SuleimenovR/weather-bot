@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import telebot
 import requests
 import sqlite3
 import json
+import datetime
 from config import bot, API
 
 
@@ -13,13 +13,14 @@ def start_message(message):
 
     cur.execute('''CREATE TABLE IF NOT EXISTS weather(
         UserId INTEGER,
-        city varchar(50))''')
+        city varchar(50),
+        timestamp TEXT)''')
     conn.commit()
     cur.close()
     conn.close()
 
-    bot.send_message(message.chat.id, 'Hi, enter me any city and I will display the weather forecast for that city.\n'
-                                      'To see the history of requests type /history')
+    bot.send_message(message.chat.id, 'Привет, напиши мне любой город и я выведу прогноз погоды в нем.\n'
+                                      'Введите /history для того, чтобы посмотреть историю последних пяти запросов')
 
 
 @bot.message_handler(commands=['history'])
@@ -28,11 +29,11 @@ def history(message):
     cur = conn.cursor()
 
     cur.execute(f'''SELECT city FROM weather
-    WHERE UserId = {message.from_user.id}''')
-    users = cur.fetchall()
-    info = 'Your city search history:\n'
-    for el in users:
-        info += f'{el[0]}\n'
+    WHERE UserId = {message.from_user.id} ORDER BY timestamp DESC LIMIT 5''')
+    users = cur.fetchall()[::-1]
+    info = 'Ваша история поиска городов:\n\n'
+    for i in range(len(users)):
+        info += f'{i+1}) {users[i][0]}\n'
 
     cur.close()
     conn.close()
@@ -46,18 +47,18 @@ def get_weather(message):
     res = requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API}&units=metric')
     data = json.loads(res.text)
     try:
-        bot.reply_to(message, f'In {city_name}, it is currently {data["main"]["temp"]}°C')
+        bot.reply_to(message, f'В городе {city_name} сейчас {data["main"]["temp"]}°C')
 
         conn = sqlite3.connect('weather_data.sql')
         cur = conn.cursor()
 
-        cur.execute("INSERT INTO weather (UserId, city) VALUES (?, ?)", (message.from_user.id, city_name))
+        cur.execute("INSERT INTO weather (UserId, city, timestamp ) VALUES (?, ?, ?)",
+                    (message.from_user.id, city_name, datetime.datetime.now()))
         conn.commit()
         cur.close()
         conn.close()
     except KeyError:
-        bot.reply_to(message, f'You made a mistake in the name of the city, or such a city does not exist')
+        bot.reply_to(message, f'Вы допустили ошибку в названии города, либо такого горда не существует')
 
 
 bot.infinity_polling()
-
