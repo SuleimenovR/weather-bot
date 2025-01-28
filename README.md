@@ -8,3 +8,6 @@ API documentation https://openweathermap.org/current
 
 Вы можете получить API на сайте https://openweathermap.org/
 Документация API https://openweathermap.org/current
+
+Используемые библиеотеки:
+pyTelegramBotApi
